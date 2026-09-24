@@ -93,5 +93,15 @@ details.person[open] .chev { transform: rotate(90deg); }
 .modal .acts { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 .modal .acts button { padding: 12px; border-radius: 999px; font-weight: 600; border: 1px solid var(--line); background: var(--bg); cursor: pointer; }
 .modal .acts .go { background: var(--neg); border-color: var(--neg); color: #fff; }
+.modal .acts .save { background: var(--bike); border-color: var(--bike); color: #fff; }
+.modal form .field:last-of-type { margin-bottom: 16px; }
+.owed { font-size: 0.85rem; margin-top: 2px; }
+.owed.due { color: var(--neg); }
+.owed.clear { color: var(--pos); }
+.settle-btn { border: 1px solid var(--bike); background: none; color: var(--bike); font-size: 0.8rem; font-weight: 600; cursor: pointer; padding: 5px 9px; border-radius: 999px; margin-left: 8px; }
+.settle-btn:hover { background: var(--bike); color: #fff; }
+.edit-btn { border: 1px solid var(--line); background: none; color: var(--muted); font-size: 0.8rem; font-weight: 600; cursor: pointer; padding: 5px 9px; border-radius: 999px; }
+.edit-btn:hover { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+.actions-group { display: flex; gap: 6px; }
 [hidden] { display: none !important; }
 @media (prefers-reduced-motion: reduce) { .toast { transition: none; } }

@@ -12,7 +12,7 @@ import TeamTab from "./components/TeamTab.jsx";
 import Toast from "./components/Toast.jsx";
 import ConfirmModal from "./components/ConfirmModal.jsx";
 
-const EMPTY = { members: [], expenses: [], sales: [] };
+const EMPTY = { members: [], expenses: [], sales: [], settlements: [] };
 
 export default function App() {
   const [state, setState] = useState(EMPTY);
@@ -73,6 +73,18 @@ export default function App() {
     }
   }
 
+  async function updateExpense(id, updates) {
+    try {
+      await api.updateExpense(id, updates);
+      await refresh();
+      showToast("Expense updated");
+      return true;
+    } catch {
+      showToast("Couldn't save changes. Try again.");
+      return false;
+    }
+  }
+
   async function deleteExpense(entry) {
     const { id, ...data } = entry;
     try {
@@ -101,6 +113,18 @@ export default function App() {
     }
   }
 
+  async function updateSale(id, updates) {
+    try {
+      await api.updateSale(id, updates);
+      await refresh();
+      showToast("Sale updated");
+      return true;
+    } catch {
+      showToast("Couldn't save changes. Try again.");
+      return false;
+    }
+  }
+
   async function deleteSale(entry) {
     const { id, ...data } = entry;
     try {
@@ -115,6 +139,32 @@ export default function App() {
       });
     } catch {
       showToast("Couldn't delete. Try again.");
+    }
+  }
+
+  async function settleMember(member, amount) {
+    try {
+      await api.addSettlement({ member, amount });
+      await refresh();
+    } catch {
+      showToast("Couldn't record the settlement. Try again.");
+    }
+  }
+
+  async function deleteSettlement(entry) {
+    const { id, ...data } = entry;
+    try {
+      await api.deleteSettlement(id);
+      await refresh();
+      showToast("Settlement undone", {
+        label: "Redo",
+        fn: async () => {
+          await api.restoreSettlement({ id, ...data });
+          await refresh();
+        },
+      });
+    } catch {
+      showToast("Couldn't undo. Try again.");
     }
   }
 
@@ -159,14 +209,14 @@ export default function App() {
       {tab === "exp" && (
         <section>
           <ExpenseForm state={state} onAddMember={addMember} onAddExpense={addExpense} toast={showToast} />
-          <ExpenseList state={state} onDelete={deleteExpense} />
+          <ExpenseList state={state} onDelete={deleteExpense} onUpdate={updateExpense} toast={showToast} />
         </section>
       )}
 
       {tab === "sale" && (
         <section>
           <SaleForm onAddSale={addSale} toast={showToast} />
-          <SaleList state={state} onDelete={deleteSale} />
+          <SaleList state={state} onDelete={deleteSale} onUpdate={updateSale} toast={showToast} />
         </section>
       )}
 
@@ -177,6 +227,8 @@ export default function App() {
             onAddMember={addMember}
             onRemoveMember={removeMember}
             onDeleteExpense={deleteExpense}
+            onSettle={settleMember}
+            onDeleteSettlement={deleteSettlement}
             onClearAll={clearAll}
             toast={showToast}
             ask={ask}

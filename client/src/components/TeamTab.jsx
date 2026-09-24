@@ -1,11 +1,25 @@
 import { useState } from "react";
-import { byWhen, fmt, inr, memberNames, sum, when } from "../utils.js";
+import EditModal from "./EditModal.jsx";
+import { byWhen, fmt, inr, memberNames, memberTotals, sum, when } from "../utils.js";
 
-export default function TeamTab({ state, onAddMember, onRemoveMember, onDeleteExpense, onClearAll, toast, ask }) {
+export default function TeamTab({
+  state,
+  onAddMember,
+  onRemoveMember,
+  onDeleteExpense,
+  onSettle,
+  onDeleteSettlement,
+  onClearAll,
+  toast,
+  ask,
+}) {
   const [name, setName] = useState("");
   const [openSet, setOpenSet] = useState(() => new Set());
+  const [settling, setSettling] = useState(null);
+  const [amount, setAmount] = useState("");
   const names = memberNames(state);
   const total = sum(state.expenses, (e) => e.amount);
+  const totalOwed = names.reduce((t, n) => t + Math.max(0, memberTotals(state, n).owed), 0);
 
   async function handleAdd() {
     const n = name.trim();
@@ -51,6 +65,23 @@ export default function TeamTab({ state, onAddMember, onRemoveMember, onDeleteEx
     });
   }
 
+  function openSettle(n, defaultAmount) {
+    setSettling(n);
+    setAmount(defaultAmount > 0 ? String(defaultAmount) : "");
+  }
+
+  async function submitSettle() {
+    const amt = parseFloat(amount);
+    if (!(amt > 0)) {
+      toast("Enter an amount above ₹0.");
+      return;
+    }
+    const who = settling;
+    await onSettle(who, amt);
+    setSettling(null);
+    toast(`Marked ${inr(amt)} paid back to ${who}`);
+  }
+
   return (
     <div className="card">
       <h3>Team members</h3>
@@ -82,15 +113,26 @@ export default function TeamTab({ state, onAddMember, onRemoveMember, onDeleteEx
         )}
         {names.map((n) => {
           const mine = byWhen(state.expenses.filter((e) => e.member === n));
-          const t = sum(mine, (e) => e.amount);
+          const theirSettlements = byWhen((state.settlements || []).filter((s) => s.member === n));
+          const { spent: t, owed } = memberTotals(state, n);
           const isOpen = openSet.has(n);
           return (
             <li style={{ display: "block", border: 0, padding: 0 }} key={n}>
               <details className="person" open={isOpen}>
-                <summary onClick={(e) => { e.preventDefault(); toggle(n); }}>
+                <summary
+                  onClick={(e) => {
+                    e.preventDefault();
+                    toggle(n);
+                  }}
+                >
                   <div>
                     <div className="what">{n}</div>
                     <div className="meta num">{total ? `${Math.round((t / total) * 100)}% of total` : "No spend yet"}</div>
+                    {t > 0 && (
+                      <div className={`owed num ${owed > 0 ? "due" : "clear"}`}>
+                        {owed > 0 ? `${inr(owed)} still owed` : "Fully settled"}
+                      </div>
+                    )}
                     <div className="bar">
                       <span style={{ width: `${total ? (t / total) * 100 : 0}%`, background: "var(--bike)" }} />
                     </div>
@@ -114,9 +156,37 @@ export default function TeamTab({ state, onAddMember, onRemoveMember, onDeleteEx
                       </button>
                     </div>
                   ))}
-                  <button className="del" style={{ marginTop: 10 }} onClick={() => handleRemove(n)}>
-                    Remove {n} from team
-                  </button>
+                  {theirSettlements.length > 0 && (
+                    <div style={{ marginTop: 10 }}>
+                      <div className="meta" style={{ fontWeight: 600, marginBottom: 4 }}>
+                        Paid back
+                      </div>
+                      {theirSettlements.map((s) => (
+                        <div className="it" key={s.id}>
+                          <div>
+                            <strong>Settlement</strong>
+                            <div className="meta">{fmt(when(s))}</div>
+                          </div>
+                          <span className="num" style={{ color: "var(--pos)" }}>
+                            {inr(s.amount)}
+                          </span>
+                          <button className="del" aria-label="Undo settlement" onClick={() => onDeleteSettlement(s)}>
+                            Undo
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  <div style={{ display: "flex", gap: 8, marginTop: 12, flexWrap: "wrap" }}>
+                    {owed > 0 && (
+                      <button className="settle-btn" onClick={() => openSettle(n, owed)}>
+                        Settle up {inr(owed)}
+                      </button>
+                    )}
+                    <button className="del" onClick={() => handleRemove(n)}>
+                      Remove {n} from team
+                    </button>
+                  </div>
                 </div>
               </details>
             </li>
@@ -128,7 +198,9 @@ export default function TeamTab({ state, onAddMember, onRemoveMember, onDeleteEx
               <span>
                 {names.length} members, {inr(total)} invested
               </span>
-              <span></span>
+              <span style={{ color: totalOwed > 0 ? "var(--neg)" : "var(--pos)" }}>
+                {totalOwed > 0 ? `${inr(totalOwed)} owed` : "All settled"}
+              </span>
             </div>
           </li>
         )}
@@ -136,6 +208,16 @@ export default function TeamTab({ state, onAddMember, onRemoveMember, onDeleteEx
       <button className="danger" type="button" onClick={handleClearAll}>
         Delete all expenses and sales
       </button>
+      {settling && (
+        <EditModal
+          title={`Settle up with ${settling}`}
+          fields={[{ name: "amount", label: "Amount paid back (₹)", type: "number", min: 0, step: "any" }]}
+          values={{ amount }}
+          onChange={(_, v) => setAmount(v)}
+          onCancel={() => setSettling(null)}
+          onSave={submitSettle}
+        />
+      )}
     </div>
   );
 }
