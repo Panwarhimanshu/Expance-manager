@@ -3,21 +3,32 @@ import { api } from "./api.js";
 import { useToast } from "./useToast.js";
 import { useConfirm } from "./useConfirm.js";
 import { downloadSheet } from "./downloadSheet.js";
+import { memberNames } from "./utils.js";
+import { CartIcon, DownloadIcon, PlusIcon, ReceiptIcon, UsersIcon } from "./icons.jsx";
 import NetSummary from "./components/NetSummary.jsx";
 import ExpenseForm from "./components/ExpenseForm.jsx";
 import ExpenseList from "./components/ExpenseList.jsx";
 import SaleForm from "./components/SaleForm.jsx";
 import SaleList from "./components/SaleList.jsx";
 import TeamTab from "./components/TeamTab.jsx";
+import AddMemberForm from "./components/AddMemberForm.jsx";
+import Sheet from "./components/Sheet.jsx";
 import Toast from "./components/Toast.jsx";
 import ConfirmModal from "./components/ConfirmModal.jsx";
 
 const EMPTY = { members: [], expenses: [], sales: [], settlements: [] };
 
+const TABS = [
+  { key: "exp", label: "Expenses", icon: ReceiptIcon, heading: "Expenses", addLabel: "Add an expense" },
+  { key: "sale", label: "Sales", icon: CartIcon, heading: "Sales", addLabel: "Record a sale" },
+  { key: "team", label: "Team", icon: UsersIcon, heading: "Team", addLabel: "Add a team member" },
+];
+
 export default function App() {
   const [state, setState] = useState(EMPTY);
   const [tab, setTab] = useState("exp");
   const [loaded, setLoaded] = useState(false);
+  const [showAdd, setShowAdd] = useState(false);
   const { toast, show: showToast } = useToast();
   const { confirm, ask } = useConfirm();
 
@@ -179,6 +190,14 @@ export default function App() {
 
   if (!loaded) return null;
 
+  const current = TABS.find((t) => t.key === tab);
+  const counts = {
+    exp: state.expenses.length,
+    sale: state.sales.length,
+    team: memberNames(state).length,
+  };
+  const countLabel = { exp: "entries", sale: "entries", team: "members" }[tab];
+
   return (
     <div className="wrap">
       <header>
@@ -186,54 +205,56 @@ export default function App() {
           <h1>Stall ledger</h1>
           <p className="sub">Navrachana stall day, Byte Club</p>
         </div>
+        <button className="icon-btn" type="button" aria-label="Download sheet (Excel)" onClick={() => downloadSheet(state)}>
+          <DownloadIcon width={19} height={19} />
+        </button>
       </header>
 
       <NetSummary state={state} />
 
-      <nav className="tabs" role="tablist">
-        {[
-          ["exp", "Expenses"],
-          ["sale", "Sales"],
-          ["team", "Team"],
-        ].map(([key, label]) => (
+      <div className="section-head">
+        <h2>{current.heading}</h2>
+        <span className="count num">
+          {counts[tab]} {countLabel}
+        </span>
+      </div>
+
+      {tab === "exp" && <ExpenseList state={state} onDelete={deleteExpense} onUpdate={updateExpense} toast={showToast} />}
+      {tab === "sale" && <SaleList state={state} onDelete={deleteSale} onUpdate={updateSale} toast={showToast} />}
+      {tab === "team" && (
+        <TeamTab
+          state={state}
+          onRemoveMember={removeMember}
+          onDeleteExpense={deleteExpense}
+          onSettle={settleMember}
+          onDeleteSettlement={deleteSettlement}
+          onClearAll={clearAll}
+          toast={showToast}
+          ask={ask}
+        />
+      )}
+
+      <button className="fab" type="button" aria-label={current.addLabel} onClick={() => setShowAdd(true)}>
+        <PlusIcon width={26} height={26} />
+      </button>
+
+      <nav className="bottom-nav" role="tablist">
+        {TABS.map(({ key, label, icon: Icon }) => (
           <button key={key} role="tab" aria-selected={tab === key} onClick={() => setTab(key)}>
+            <Icon className="icon" width={22} height={22} />
             {label}
           </button>
         ))}
       </nav>
 
-      <button className="dl" type="button" onClick={() => downloadSheet(state)}>
-        Download sheet (Excel)
-      </button>
-
-      {tab === "exp" && (
-        <section>
-          <ExpenseForm state={state} onAddMember={addMember} onAddExpense={addExpense} toast={showToast} />
-          <ExpenseList state={state} onDelete={deleteExpense} onUpdate={updateExpense} toast={showToast} />
-        </section>
-      )}
-
-      {tab === "sale" && (
-        <section>
-          <SaleForm onAddSale={addSale} toast={showToast} />
-          <SaleList state={state} onDelete={deleteSale} onUpdate={updateSale} toast={showToast} />
-        </section>
-      )}
-
-      {tab === "team" && (
-        <section>
-          <TeamTab
-            state={state}
-            onAddMember={addMember}
-            onRemoveMember={removeMember}
-            onDeleteExpense={deleteExpense}
-            onSettle={settleMember}
-            onDeleteSettlement={deleteSettlement}
-            onClearAll={clearAll}
-            toast={showToast}
-            ask={ask}
-          />
-        </section>
+      {showAdd && (
+        <Sheet title={current.addLabel} onClose={() => setShowAdd(false)}>
+          {tab === "exp" && (
+            <ExpenseForm state={state} onAddMember={addMember} onAddExpense={addExpense} toast={showToast} onDone={() => setShowAdd(false)} />
+          )}
+          {tab === "sale" && <SaleForm onAddSale={addSale} toast={showToast} onDone={() => setShowAdd(false)} />}
+          {tab === "team" && <AddMemberForm onAddMember={addMember} onDone={() => setShowAdd(false)} />}
+        </Sheet>
       )}
 
       <Toast toast={toast} />

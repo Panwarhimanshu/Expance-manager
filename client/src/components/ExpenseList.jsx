@@ -1,5 +1,6 @@
 import { useState } from "react";
 import EditModal from "./EditModal.jsx";
+import { ReceiptIcon, PencilIcon, TrashIcon } from "../icons.jsx";
 import { byWhen, fmt, inr, readWhenValue, sum, toLocalInput, when } from "../utils.js";
 
 export default function ExpenseList({ state, onDelete, onUpdate, toast }) {
@@ -27,14 +28,28 @@ export default function ExpenseList({ state, onDelete, onUpdate, toast }) {
     setEditing(null);
   }
 
+  if (items.length === 0) {
+    return (
+      <div className="card">
+        <div className="empty-state">
+          <div className="icon">
+            <ReceiptIcon />
+          </div>
+          <div className="title">No expenses yet</div>
+          <div className="sub">Tap the + button to log the first one.</div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="card">
-      <h3>All expenses</h3>
       <ul className="list">
-        {items.length === 0 && <li className="empty" style={{ display: "block" }}>No expenses yet. Add the first one above.</li>}
         {items.map((e) => (
-          <li className="b" key={e.id}>
-            <span className="dot" />
+          <li key={e.id}>
+            <span className="tile b">
+              <ReceiptIcon width={18} height={18} />
+            </span>
             <div>
               <div className="what">{e.item}</div>
               <div className="meta">{e.member}</div>
@@ -42,23 +57,21 @@ export default function ExpenseList({ state, onDelete, onUpdate, toast }) {
             </div>
             <span className="amt num">{inr(e.amount)}</span>
             <div className="actions-group">
-              <button className="edit-btn" aria-label={`Edit ${e.item}`} onClick={() => startEdit(e)}>
-                Edit
+              <button className="icon-action" aria-label={`Edit ${e.item}`} onClick={() => startEdit(e)}>
+                <PencilIcon width={16} height={16} />
               </button>
-              <button className="del" aria-label={`Delete ${e.item}`} onClick={() => onDelete(e)}>
-                Delete
+              <button className="icon-action danger" aria-label={`Delete ${e.item}`} onClick={() => onDelete(e)}>
+                <TrashIcon width={16} height={16} />
               </button>
             </div>
           </li>
         ))}
-        {items.length > 0 && (
-          <li style={{ display: "block", border: 0, padding: 0 }}>
-            <div className="sumline num">
-              <span>Total</span>
-              <span>{inr(sum(items, (e) => e.amount))}</span>
-            </div>
-          </li>
-        )}
+        <li style={{ display: "block", border: 0, padding: 0 }}>
+          <div className="sumline num">
+            <span>Total</span>
+            <span>{inr(sum(items, (e) => e.amount))}</span>
+          </div>
+        </li>
       </ul>
       {editing && (
         <EditModal

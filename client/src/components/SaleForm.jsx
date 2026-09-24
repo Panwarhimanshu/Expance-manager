@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { nowLocal, readWhenValue, STALL } from "../utils.js";
 
-export default function SaleForm({ onAddSale, toast }) {
+export default function SaleForm({ onAddSale, toast, onDone }) {
   const [product, setProduct] = useState("");
   const [qty, setQty] = useState("1");
   const [amount, setAmount] = useState("");
@@ -25,12 +25,12 @@ export default function SaleForm({ onAddSale, toast }) {
       setAmount("");
       setWhen(nowLocal());
       toast(`Recorded ${q} × ${product}`);
+      onDone?.();
     }
   }
 
   return (
-    <form className="card" autoComplete="off" onSubmit={handleSubmit}>
-      <h3>Record a sale</h3>
+    <form autoComplete="off" onSubmit={handleSubmit}>
       <div className="field">
         <label htmlFor="saleItem">Product</label>
         <input id="saleItem" placeholder="Donut, keychain…" required value={product} onChange={(e) => setProduct(e.target.value)} />

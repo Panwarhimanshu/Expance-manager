@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { memberNames, nowLocal, readWhenValue, STALL, inr } from "../utils.js";
 
-export default function ExpenseForm({ state, onAddMember, onAddExpense, toast }) {
+export default function ExpenseForm({ state, onAddMember, onAddExpense, toast, onDone }) {
   const names = memberNames(state);
   const [who, setWho] = useState("");
   const [newName, setNewName] = useState("");
@@ -46,12 +46,12 @@ export default function ExpenseForm({ state, onAddMember, onAddExpense, toast })
       setAmount("");
       setWhen(nowLocal());
       toast(`Added ${inr(amt)}`);
+      onDone?.();
     }
   }
 
   return (
-    <form className="card" autoComplete="off" onSubmit={handleSubmit}>
-      <h3>Add an expense</h3>
+    <form autoComplete="off" onSubmit={handleSubmit}>
       <div className="field">
         <label htmlFor="expWho">Who paid</label>
         <select

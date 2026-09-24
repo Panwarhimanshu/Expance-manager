@@ -1,5 +1,6 @@
 import { useState } from "react";
 import EditModal from "./EditModal.jsx";
+import { CartIcon, PencilIcon, TrashIcon } from "../icons.jsx";
 import { byWhen, fmt, inr, readWhenValue, sum, toLocalInput, when } from "../utils.js";
 
 export default function SaleList({ state, onDelete, onUpdate, toast }) {
@@ -32,14 +33,28 @@ export default function SaleList({ state, onDelete, onUpdate, toast }) {
     setEditing(null);
   }
 
+  if (items.length === 0) {
+    return (
+      <div className="card">
+        <div className="empty-state">
+          <div className="icon">
+            <CartIcon />
+          </div>
+          <div className="title">No sales yet</div>
+          <div className="sub">Tap the + button when the first customer pays.</div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="card">
-      <h3>All sales</h3>
       <ul className="list">
-        {items.length === 0 && <li className="empty" style={{ display: "block" }}>No sales yet. Record one when the first customer pays.</li>}
         {items.map((s) => (
-          <li className="b" key={s.id}>
-            <span className="dot" />
+          <li key={s.id}>
+            <span className="tile b">
+              <CartIcon width={18} height={18} />
+            </span>
             <div>
               <div className="what">
                 {s.product} × {Number(s.qty) || 0}
@@ -48,23 +63,21 @@ export default function SaleList({ state, onDelete, onUpdate, toast }) {
             </div>
             <span className="amt num">{inr(s.amount)}</span>
             <div className="actions-group">
-              <button className="edit-btn" aria-label={`Edit ${s.product}`} onClick={() => startEdit(s)}>
-                Edit
+              <button className="icon-action" aria-label={`Edit ${s.product}`} onClick={() => startEdit(s)}>
+                <PencilIcon width={16} height={16} />
               </button>
-              <button className="del" aria-label={`Delete ${s.product}`} onClick={() => onDelete(s)}>
-                Delete
+              <button className="icon-action danger" aria-label={`Delete ${s.product}`} onClick={() => onDelete(s)}>
+                <TrashIcon width={16} height={16} />
               </button>
             </div>
           </li>
         ))}
-        {items.length > 0 && (
-          <li style={{ display: "block", border: 0, padding: 0 }}>
-            <div className="sumline num">
-              <span>{sum(items, (s) => s.qty)} items</span>
-              <span>{inr(sum(items, (s) => s.amount))}</span>
-            </div>
-          </li>
-        )}
+        <li style={{ display: "block", border: 0, padding: 0 }}>
+          <div className="sumline num">
+            <span>{sum(items, (s) => s.qty)} items</span>
+            <span>{inr(sum(items, (s) => s.amount))}</span>
+          </div>
+        </li>
       </ul>
       {editing && (
         <EditModal

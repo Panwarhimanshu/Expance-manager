@@ -1,30 +1,15 @@
 import { useState } from "react";
 import EditModal from "./EditModal.jsx";
+import { CheckIcon, TrashIcon, UsersIcon } from "../icons.jsx";
 import { byWhen, fmt, inr, memberNames, memberTotals, sum, when } from "../utils.js";
 
-export default function TeamTab({
-  state,
-  onAddMember,
-  onRemoveMember,
-  onDeleteExpense,
-  onSettle,
-  onDeleteSettlement,
-  onClearAll,
-  toast,
-  ask,
-}) {
-  const [name, setName] = useState("");
+export default function TeamTab({ state, onRemoveMember, onDeleteExpense, onSettle, onDeleteSettlement, onClearAll, toast, ask }) {
   const [openSet, setOpenSet] = useState(() => new Set());
   const [settling, setSettling] = useState(null);
   const [amount, setAmount] = useState("");
   const names = memberNames(state);
   const total = sum(state.expenses, (e) => e.amount);
   const totalOwed = names.reduce((t, n) => t + Math.max(0, memberTotals(state, n).owed), 0);
-
-  async function handleAdd() {
-    const n = name.trim();
-    if (await onAddMember(n)) setName("");
-  }
 
   async function handleRemove(n) {
     const theirs = state.expenses.filter((e) => e.member === n);
@@ -82,35 +67,23 @@ export default function TeamTab({
     toast(`Marked ${inr(amt)} paid back to ${who}`);
   }
 
-  return (
-    <div className="card">
-      <h3>Team members</h3>
-      <div className="field">
-        <label htmlFor="teamName">Add a name</label>
-        <div className="inline">
-          <input
-            id="teamName"
-            placeholder="e.g. Aarav"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === "Enter") {
-                e.preventDefault();
-                handleAdd();
-              }
-            }}
-          />
-          <button type="button" onClick={handleAdd}>
-            Add
-          </button>
+  if (names.length === 0) {
+    return (
+      <div className="card">
+        <div className="empty-state">
+          <div className="icon">
+            <UsersIcon />
+          </div>
+          <div className="title">No team members yet</div>
+          <div className="sub">Tap the + button to add everyone on the team.</div>
         </div>
       </div>
+    );
+  }
+
+  return (
+    <div className="card">
       <ul className="list">
-        {names.length === 0 && (
-          <li className="empty" style={{ display: "block" }}>
-            Add everyone on the team so they can log what they spent.
-          </li>
-        )}
         {names.map((n) => {
           const mine = byWhen(state.expenses.filter((e) => e.member === n));
           const theirSettlements = byWhen((state.settlements || []).filter((s) => s.member === n));
@@ -130,7 +103,13 @@ export default function TeamTab({
                     <div className="meta num">{total ? `${Math.round((t / total) * 100)}% of total` : "No spend yet"}</div>
                     {t > 0 && (
                       <div className={`owed num ${owed > 0 ? "due" : "clear"}`}>
-                        {owed > 0 ? `${inr(owed)} still owed` : "Fully settled"}
+                        {owed > 0 ? (
+                          `${inr(owed)} still owed`
+                        ) : (
+                          <>
+                            <CheckIcon width={13} height={13} /> Fully settled
+                          </>
+                        )}
                       </div>
                     )}
                     <div className="bar">
@@ -151,8 +130,8 @@ export default function TeamTab({
                         <div className="meta">{fmt(when(e))}</div>
                       </div>
                       <span className="num">{inr(e.amount)}</span>
-                      <button className="del" aria-label={`Delete ${e.item}`} onClick={() => onDeleteExpense(e)}>
-                        Delete
+                      <button className="icon-action danger" aria-label={`Delete ${e.item}`} onClick={() => onDeleteExpense(e)}>
+                        <TrashIcon width={15} height={15} />
                       </button>
                     </div>
                   ))}
@@ -170,21 +149,21 @@ export default function TeamTab({
                           <span className="num" style={{ color: "var(--pos)" }}>
                             {inr(s.amount)}
                           </span>
-                          <button className="del" aria-label="Undo settlement" onClick={() => onDeleteSettlement(s)}>
-                            Undo
+                          <button className="icon-action danger" aria-label="Undo settlement" onClick={() => onDeleteSettlement(s)}>
+                            <TrashIcon width={15} height={15} />
                           </button>
                         </div>
                       ))}
                     </div>
                   )}
-                  <div style={{ display: "flex", gap: 8, marginTop: 12, flexWrap: "wrap" }}>
+                  <div style={{ display: "flex", gap: 8, marginTop: 12, flexWrap: "wrap", alignItems: "center" }}>
                     {owed > 0 && (
                       <button className="settle-btn" onClick={() => openSettle(n, owed)}>
-                        Settle up {inr(owed)}
+                        <CheckIcon width={14} height={14} /> Settle up {inr(owed)}
                       </button>
                     )}
-                    <button className="del" onClick={() => handleRemove(n)}>
-                      Remove {n} from team
+                    <button className="icon-action danger" aria-label={`Remove ${n} from team`} onClick={() => handleRemove(n)}>
+                      <TrashIcon width={15} height={15} />
                     </button>
                   </div>
                 </div>
@@ -192,18 +171,16 @@ export default function TeamTab({
             </li>
           );
         })}
-        {names.length > 0 && (
-          <li style={{ display: "block", border: 0, padding: 0 }}>
-            <div className="sumline num">
-              <span>
-                {names.length} members, {inr(total)} invested
-              </span>
-              <span style={{ color: totalOwed > 0 ? "var(--neg)" : "var(--pos)" }}>
-                {totalOwed > 0 ? `${inr(totalOwed)} owed` : "All settled"}
-              </span>
-            </div>
-          </li>
-        )}
+        <li style={{ display: "block", border: 0, padding: 0 }}>
+          <div className="sumline num">
+            <span>
+              {names.length} members, {inr(total)} invested
+            </span>
+            <span style={{ color: totalOwed > 0 ? "var(--neg)" : "var(--pos)" }}>
+              {totalOwed > 0 ? `${inr(totalOwed)} owed` : "All settled"}
+            </span>
+          </div>
+        </li>
       </ul>
       <button className="danger" type="button" onClick={handleClearAll}>
         Delete all expenses and sales

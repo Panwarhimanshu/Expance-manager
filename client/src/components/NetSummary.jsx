@@ -1,3 +1,4 @@
+import { CoinIcon } from "../icons.jsx";
 import { inr, sum } from "../utils.js";
 
 export default function NetSummary({ state }) {
@@ -10,12 +11,15 @@ export default function NetSummary({ state }) {
 
   return (
     <section className="net" aria-live="polite">
-      <div className="lbl">{net < 0 ? "Still to recover" : "Net profit so far"}</div>
+      <div className="lbl">
+        <CoinIcon width={16} height={16} />
+        {net < 0 ? "Still to recover" : "Net profit so far"}
+      </div>
       <div className="big num">{(net < 0 ? "−" : "") + inr(Math.abs(net))}</div>
       <div className="eq num">
         {inr(earned)} earned − {inr(spent)} spent, {itemsSold} items sold
       </div>
-      <div className="eq num" style={{ marginTop: 8, paddingTop: 8, borderTop: "1px solid rgba(255,255,255,0.15)" }}>
+      <div className="eq num cash-row">
         {inr(cash)} cash on hand{settled > 0 ? ` · ${inr(settled)} paid back to the team` : ""}
       </div>
     </section>
