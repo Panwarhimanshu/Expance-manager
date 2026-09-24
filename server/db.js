@@ -10,7 +10,12 @@ async function connect() {
   if (!cached.promise) {
     const uri = process.env.MONGODB_URI;
     if (!uri) throw new Error("MONGODB_URI is not set. Add it to server/.env (local) or your Vercel project's env vars.");
-    cached.promise = mongoose.connect(uri, { dbName: process.env.MONGODB_DB || "stall_ledger" });
+    cached.promise = mongoose
+      .connect(uri, { dbName: process.env.MONGODB_DB || "stall_ledger", serverSelectionTimeoutMS: 8000 })
+      .catch((err) => {
+        cached.promise = null; // allow the next request to retry instead of reusing a failed connection forever
+        throw err;
+      });
   }
   cached.conn = await cached.promise;
   return cached.conn;
